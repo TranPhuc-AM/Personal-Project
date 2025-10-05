@@ -1,0 +1,632 @@
+---
+title: "iFood"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+    css: style_dash.css
+---
+
+```{r setup, include=FALSE}
+# Setting
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
+
+# Package
+library(flexdashboard)
+pacman::p_load(dplyr, ggplot2, plotly, readxl)
+
+# Data
+ifood_df <- read.csv("ml_project1_data.csv", header = T)
+
+# Miss value
+ifood_df <- na.omit(ifood_df)
+ifood_df$ID <- NULL
+
+# Bở giá trị thừa
+ifood_df <- ifood_df[, !names(ifood_df) %in% c("Z_CostContact", "Z_Revenue")]
+
+
+color2_fill <- c("rgba(59, 134, 134, 0.5)", "rgba(121, 189, 154, 0.5)")
+color2_line <- c("rgba(59, 134, 134, 1)", "rgba(121, 189, 154, 1)")
+
+color4_fill <- c("rgba(59, 134, 134, 0.5)", "rgba(121, 189, 154, 0.5)", 
+                 "rgba(168, 219, 168, 0.5)", "rgba(207, 240, 158, 0.5)")
+color4_line <- c("rgba(59, 134, 134, 1)", "rgba(121, 189, 154, 1)", 
+                 "rgba(168, 219, 168, 1)", "rgba(207, 240, 158, 1)")
+
+color8_fill <- c("rgba(38, 123, 123, 0.5)", "rgba(59, 134, 134, 0.5)", 
+                 "rgba(92, 167, 142, 0.5)", "rgba(121, 189, 154, 0.5)", 
+                 "rgba(147, 204, 160, 0.5)", "rgba(168, 219, 168, 0.5)", 
+                 "rgba(190, 227, 163, 0.5)", "rgba(207, 240, 158, 0.5)")
+color8_line <- c("rgba(38, 123, 123, 1)", "rgba(59, 134, 134, 1)", 
+                 "rgba(92, 167, 142, 1)", "rgba(121, 189, 154, 1)", 
+                 "rgba(147, 204, 160, 1)", "rgba(168, 219, 168, 1)", 
+                 "rgba(190, 227, 163, 1)", "rgba(207, 240, 158, 1)")
+color8_hex <- c("#064547","#0B686B","#267B7B","#3B8686","#5CA78E","#79BD9A", 
+                "#93CCA0","#A8DBA8","#BEE3A3","#CFF09E","#E8F8C9","#F8FFD9")
+
+
+
+
+# Dark layout
+dark_layout <- function(p) {
+  layout(
+    p,
+    paper_bgcolor = '#1e1e1e',
+    plot_bgcolor = '#2c2c2c',
+    font = list(color = 'white'),
+    xaxis = list(color = 'white'),
+    yaxis = list(color = 'white')
+  )
+}
+```
+
+# Customer Overview
+
+<!-- thông tin nhân khẩu học, phân phối thu nhập, tuổi 
+  Cột 1:  Violin của Income, Age
+          
+-->
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+### Age
+```{r}
+ifood_df %>% select(Year_Birth) %>% 
+  mutate(Age = 2020 - Year_Birth) %>% 
+  filter(Age <= 100) %>% 
+  plot_ly(y = ~Age, type = "violin", 
+          box = list(visible = T),
+          quartilemethod="linear",
+          meanline = list(visible = T), 
+          line = list(color = "rgba(38, 123, 123, 1)"),
+          fillcolor = "rgba(38, 123, 123, 0.5)", 
+          x0 = "Age",
+          points = "all",
+          jitter = 0,
+          marker = list(color = "rgba(38, 123, 123)")) %>% 
+  layout(yaxis = list(title = "", zeroline = F)) %>% 
+  dark_layout()
+```
+
+### Kid and Teen
+
+```{r}
+KidTeen <- ifood_df %>% select(Kidhome, Teenhome) %>% 
+  mutate(Total = Kidhome + Teenhome) %>% 
+  group_by(Total) %>% 
+  summarise(count = n()) %>% 
+  mutate(percent = paste0(round(count/sum(count)*100, 2), "%"))
+plot_ly(data = KidTeen, x = ~Total, y = ~count, type = "bar", 
+        text = KidTeen$percent,
+        marker = list(color = color4_line)) %>% 
+  layout(xaxis = list(title = "Total number of children and teen"),
+         yaxis = list(title = "")) %>% 
+  dark_layout()
+```
+
+
+Column {data-width=650, .tabset}
+-----------------------------------------------------------------------
+### Income
+```{r}
+ifood_df %>% 
+  plot_ly(y = ~Income, type = "violin", 
+          box = list(visible = T),
+          quartilemethod="linear",
+          meanline = list(visible = T), 
+          line = list(color = "rgba(38, 123, 123, 1)"),
+          fillcolor = "rgba(38, 123, 123, 0.5)", 
+          x0 = "Income",
+          points = "all",
+          jitter = 0,
+          marker = list(color = "rgba(38, 123, 123)")) %>% 
+  layout(yaxis = list(title = "", zeroline = F)) %>% 
+  dark_layout()
+```
+
+### Income by Marital
+```{r}
+name <- sort(unique(ifood_df$Marital_Status))
+fig <- plot_ly()
+for (i in 1:length(name)){
+  temp_df <- ifood_df %>% filter(Marital_Status == name[i])
+  fig <- fig %>% 
+    add_trace(data = temp_df,
+              y = ~Income,
+              type = "violin", name = name[i],
+              box = list(visible = TRUE), 
+              meanline = list(visible = TRUE),
+              quartilemethod = "linear", 
+              points = "all", jitter = 0,
+              line = list(color = color8_line[i]), 
+              fillcolor = color8_fill[i],
+              marker = list(color = color8_line[i]))
+}
+fig %>% layout(xaxis = list(title = "Marital status"),
+               yaxis = list(zeroline = FALSE)) %>% dark_layout()
+```
+
+### Income by Education
+```{r}
+name <- sort(unique(ifood_df$Education))
+fig <- plot_ly()
+for (i in 1:length(name)){
+  temp_df <- ifood_df %>% filter(Education == name[i])
+  fig <- fig %>% 
+    add_trace(data = temp_df,
+              y = ~Income,
+              type = "violin", name = name[i],
+              box = list(visible = TRUE), 
+              meanline = list(visible = TRUE),
+              quartilemethod = "linear", 
+              points = "all", jitter = 0,
+              line = list(color = color8_line[i]), 
+              fillcolor = color8_fill[i],
+              marker = list(color = color8_line[i]))
+}
+fig %>% layout(xaxis = list(title = "Education"),
+               yaxis = list(zeroline = FALSE)) %>% dark_layout()
+```
+
+
+# Spending Behavior
+Column {data-width=350}
+-----------------------------------------------------------------------
+### Expenditure share of products
+```{r}
+pie <- data.frame(ifood_df %>% 
+                    select(MntWines, MntFruits, MntMeatProducts,
+                    MntFishProducts, MntSweetProducts, 
+                    MntGoldProds) %>%
+  apply(2, sum))
+pie <- `colnames<-` (pie, "Sum")
+pie <- `rownames<-` (pie, c("Wines Products", "Fruits Products",
+                            "Meat Products", "Fish Products",
+                            "Sweet Products", "Gold Products"))
+pie <- sort_by.data.frame(pie, y = pie$Sum)
+
+plot_ly(pie, labels = ~rownames(pie),values = ~Sum, type = "pie",
+        textposition = 'inside',
+        textinfo = 'label+percent',
+        marker = list(colors = color8_line[nrow(pie):1],
+                      line = list(color = '#FFFFFF', width = 1)),
+        showlegend = FALSE) %>% 
+  dark_layout()
+
+```
+
+### Products by average spend
+```{r}
+bar <- data.frame(ifood_df %>% 
+                    select(MntWines, MntFruits, MntMeatProducts,
+                    MntFishProducts, MntSweetProducts, 
+                    MntGoldProds) %>%
+  apply(2, mean))
+bar <- `colnames<-` (bar, "Mean")
+bar <- `rownames<-` (bar, c("Wines", "Fruits","Meat", "Fish",
+                            "Sweet", "Gold"))
+
+plot_ly(bar, x = ~rownames(bar), y = ~round(Mean, 2), type = "bar",
+        marker = list(color = color8_line[6:1]),
+        showlegend = FALSE) %>% 
+  layout(xaxis = list(title = "Products"),
+         yaxis = list(title = "Average amount level")) %>% 
+  dark_layout()
+```
+
+
+Column {data-width=650, .tabset}
+-----------------------------------------------------------------------
+### MntTotal and Income
+```{r}
+ifood_df %>% mutate(MntTotal = MntWines + MntFruits + MntMeatProducts +
+                      MntFishProducts + MntSweetProducts + MntGoldProds) %>% 
+  plot_ly(x = ~Income, y = ~MntTotal,
+          marker = list(color = color8_line[1])) %>% 
+  layout(xaxis = list(title = "Total amount for all products")) %>% 
+  dark_layout()
+```
+
+### MntTotal and Marital
+```{r}
+name <- sort(unique(ifood_df$Marital_Status))
+fig <- plot_ly()
+for (i in 1:length(name)){
+  temp_df <- ifood_df %>% 
+    mutate(MntTotal = MntWines + MntFruits + MntMeatProducts +
+                      MntFishProducts + MntSweetProducts + MntGoldProds) %>% 
+    filter(Marital_Status == name[i])
+  fig <- fig %>% 
+    add_trace(data = temp_df,
+              y = ~MntTotal,
+              type = "violin", name = name[i],
+              box = list(visible = TRUE), 
+              meanline = list(visible = TRUE),
+              quartilemethod = "linear", 
+              points = "all", jitter = 0,
+              line = list(color = color8_line[i]), 
+              fillcolor = color8_fill[i],
+              marker = list(color = color8_line[i]))
+}
+fig %>% layout(xaxis = list(title = "Marital Status"),
+               yaxis = list(zeroline = FALSE)) %>% dark_layout()
+```
+
+### MntTotal and Education
+```{r}
+name <- sort(unique(ifood_df$Education))
+fig <- plot_ly()
+for (i in 1:length(name)){
+  temp_df <- ifood_df %>% 
+    mutate(MntTotal = MntWines + MntFruits + MntMeatProducts +
+                      MntFishProducts + MntSweetProducts + MntGoldProds) %>% 
+    filter(Education == name[i])
+  fig <- fig %>% 
+    add_trace(data = temp_df,
+              y = ~MntTotal,
+              type = "violin", name = name[i],
+              box = list(visible = TRUE), 
+              meanline = list(visible = TRUE),
+              quartilemethod = "linear", 
+              points = "all", jitter = 0,
+              line = list(color = color8_line[i]), 
+              fillcolor = color8_fill[i],
+              marker = list(color = color8_line[i]))
+}
+fig %>% layout(xaxis = list(title = "Education"),
+               yaxis = list(zeroline = FALSE)) %>% dark_layout()
+```
+
+
+# Purchase Channels
+Column {data-width=350}
+-----------------------------------------------------------------------
+### Purchase channel by Age
+```{r}
+ifood_df %>% 
+  select(Year_Birth, 
+         NumWebPurchases, NumCatalogPurchases, NumStorePurchases) %>% 
+  mutate(Age = 2020 - Year_Birth) %>% 
+  filter(Age <= 100) %>% 
+  group_by(Age) %>% 
+  summarise(web = sum(NumWebPurchases), 
+            catalog = sum(NumCatalogPurchases),
+            store = sum(NumStorePurchases)) %>% 
+  plot_ly(x = ~Age, y = ~web, name = "Web",
+          type = "scatter", mode = "lines",
+          line = list(color = color4_line[1]),
+          marker = list(color = color4_line[1])) %>% 
+  add_trace(y = ~catalog, name = "Catalog",
+            line = list(color = color4_line[2]),
+            marker = list(color = color4_line[2])) %>% 
+  add_trace(y = ~store, name = "Store",
+            line = list(color = color4_line[3]),
+            marker = list(color = color4_line[3])) %>% 
+  layout(yaxis = list(title = "Total number of Purchase")) %>% 
+  dark_layout()
+```
+
+### Website efficiency
+```{r}
+ifood_df %>% select(NumWebVisitsMonth, NumWebPurchases) %>% 
+  summarise(data.frame(
+    stage = c("Visits", "Purchases"),
+    value = c(sum(NumWebVisitsMonth), sum(NumWebPurchases)))
+    ) %>% 
+  plot_ly(type = "funnel", x = ~value, y = ~stage,
+          textinfo = "value+percent previous+percent initial",
+          marker = list(color = color2_line,
+                        line = list(width = 1, color = "#fff")),
+          connector = list(line = list(color = "#fff", dash = "soild", 
+                                       width = 3))) %>% 
+  layout(yaxis = list(title = "", categoryarray = stage)) %>% 
+  dark_layout()
+```
+
+
+Column {data-width=650, .tabset}
+-----------------------------------------------------------------------
+### Purchase channel
+```{r}
+ifood_df %>% 
+  select(NumWebPurchases, NumCatalogPurchases, NumStorePurchases) %>% 
+  summarise(web = sum(NumWebPurchases), 
+            catalog = sum(NumCatalogPurchases),
+            store = sum(NumStorePurchases)) %>% 
+  plot_ly(x = "Web" ,y = ~web, type = "bar",
+          text = ~web,
+          marker = list(color = color4_line[1]),
+          showlegend = FALSE) %>% 
+  add_trace(y = ~catalog, x = "Catalog",
+            text = ~catalog,
+            marker = list(color = color4_line[2]),
+            showlegend = FALSE) %>% 
+  add_trace(y = ~store, x = "Store",
+            text = ~store,
+            marker = list(color = color4_line[3]), 
+            showlegend = FALSE) %>% 
+  layout(yaxis = list(title = "Total number of Purchases"),
+         barmode = "group") %>% 
+  dark_layout()
+```
+
+### Purchase channel by Education
+```{r}
+ifood_df %>% 
+  select(Education,
+         NumWebPurchases, NumCatalogPurchases, NumStorePurchases) %>% 
+  group_by(Education) %>% 
+  summarise(web = sum(NumWebPurchases), 
+            catalog = sum(NumCatalogPurchases),
+            store = sum(NumStorePurchases)) %>% 
+  plot_ly(x = ~Education, y = ~web, type = "bar", name = "Web",
+          text = ~web,
+          marker = list(color = color4_line[1])) %>% 
+  add_trace(y = ~catalog, name = "Catalog",
+            text = ~catalog,
+            marker = list(color = color4_line[2])) %>% 
+  add_trace(y = ~store, name = "Store",
+            text = ~store,
+            marker = list(color = color4_line[3])) %>% 
+  layout(yaxis = list(title = "Total number of Purchases"), 
+         # y = list(title = "Edu")
+         barmode = "group") %>% 
+  dark_layout()
+```
+
+### Purchases channel by Marital
+```{r}
+ifood_df %>% 
+  select(Marital_Status,
+         NumWebPurchases, NumCatalogPurchases, NumStorePurchases) %>% 
+  group_by(Marital_Status) %>% 
+  summarise(web = sum(NumWebPurchases), 
+            catalog = sum(NumCatalogPurchases),
+            store = sum(NumStorePurchases)) %>% 
+  plot_ly(x = ~Marital_Status, y = ~web, type = "bar", name = "Web",
+          text = ~web,
+          marker = list(color = color4_line[1])) %>% 
+  add_trace(y = ~catalog, name = "Catalog",
+            text = ~catalog,
+            marker = list(color = color4_line[2])) %>% 
+  add_trace(y = ~store, name = "Store", 
+            text = ~store,
+            marker = list(color = color4_line[3])) %>% 
+  layout(yaxis = list(title = "Total number of Purchases"), 
+         xaxis = list(title = "Marital status"),
+         barmode = "group") %>% 
+  dark_layout()
+```
+
+
+# Marketing Campaign
+Column {data-width=350}
+-----------------------------------------------------------------------
+### Customers accepted in at least 1 campaign
+```{r}
+ifood_df %>% select(AcceptedCmp1, AcceptedCmp2, AcceptedCmp3, 
+                    AcceptedCmp4, AcceptedCmp5) %>% 
+  mutate(Accepted = AcceptedCmp1 + AcceptedCmp2 + AcceptedCmp3 + 
+                    AcceptedCmp4 + AcceptedCmp5) %>% 
+  summarise(paste0(round(sum(Accepted)/ nrow(ifood_df)*100, 3), "%")) %>% 
+  valueBox(format(paste0(), big.mark = ",", decimal.mark = "."),
+           caption = "Customers accepted in at least 1 campaign",
+           icon = "fa-solid fa-percent",
+           color = color8_line[8])
+```
+
+### KPI
+```{r}
+ifood_df %>% 
+  summarise(Campaign = c("Campaign1", "Campaign2", "Campaign3", 
+                         "Campaign4", "Campaign5", "Response"),
+            Accepted = c(sum(AcceptedCmp1), sum(AcceptedCmp2), 
+                         sum(AcceptedCmp3), sum(AcceptedCmp4),
+                         sum(AcceptedCmp5), sum(Response)),
+            No_Accepted = c(sum(AcceptedCmp1-1)*-1, sum(AcceptedCmp2-1)*-1, 
+                         sum(AcceptedCmp3-1)*-1, sum(AcceptedCmp4-1)*-1,
+                         sum(AcceptedCmp5-1)*-1, sum(Response-1)*-1)) %>% 
+  plot_ly(x = ~Campaign) %>%
+  add_trace(y = ~Accepted, type = "bar", name = "Accepted",
+            text = ~Accepted,
+            marker = list(color = color4_line[1])) %>% 
+  add_trace(y = ~No_Accepted, type = "bar", name = "No Accepted",
+            text = ~No_Accepted,
+            marker = list(color = color4_line[2])) %>% 
+  layout(yaxis = list(title = ""), barmode = "stack") %>% 
+  dark_layout()
+```
+
+
+Column {data-width=650, .tabset}
+-----------------------------------------------------------------------
+### Response Rate by Age & Income
+```{r}
+ifood_df %>% select(Year_Birth, Income, Response) %>% 
+  mutate(Age = 2020 - Year_Birth) %>% 
+  filter(Age <= 100) %>% 
+  mutate(Income_gr = case_when(Income <= 10000 ~ "<= 10000",
+                               Income <= 30000 ~ "10001 - 30000",
+                               Income <= 100000 ~ "30001 - 100000",
+                               Income <= 300000 ~ "100001 - 300000",
+                               Income > 300000 ~ "> 300000"),
+         Age_gr = case_when(Age <= 29 ~ "24 - 29", Age <= 34 ~ "30 - 34",
+                            Age <= 39 ~ "35 - 39", Age <= 44 ~ "40 - 44",
+                            Age <= 49 ~ "45 - 49", Age <= 54 ~ "50 - 54",
+                            Age <= 59 ~ "55 - 59", Age <= 64 ~ "60 - 64",
+                            Age <= 69 ~ "65 - 69", Age <= 74 ~ "70 - 74",
+                            Age <= 79 ~ "75 - 80", Age > 80 ~ "80+")) %>% 
+  group_by(Income_gr, Age_gr) %>% 
+  summarise(total = n(),
+            sum_res = sum(Response),
+            Percent = round(sum_res/total*100,2)) %>% 
+  select(Income_gr, Age_gr, Percent) %>% 
+  plot_ly(x = ~Age_gr, y = ~Income_gr, z = ~Percent, type = "heatmap") %>% 
+  layout(xaxis = list(title = "Age group"),
+         yaxis = list(title = "Income group",
+                      categoryarray = c("<= 10000", "10001 - 30000", 
+                                        "30001 - 100000", "100001 - 300000",
+                                        "> 300000"))) %>% 
+  dark_layout()
+  
+```
+
+
+# Customer Segmentation
+Column {data-width=1000, .tabset}
+-----------------------------------------------------------------------
+### 6 Cluster
+```{r}
+library(factoextra)
+# Lọc dữ liệu
+cluster_df <- ifood_df %>%
+  mutate(Age = 2020 - Year_Birth) %>%
+  filter(Age <= 100) %>% 
+  mutate(Basic = ifelse(Education == "Basic", 1, 0),
+         town_Cycle = ifelse(Education == "2n Cycle", 1, 0),
+         Graduation = ifelse(Education == "Graduation", 1, 0),
+         Master = ifelse(Education == "Master", 1, 0),
+         Single = ifelse(Marital_Status == "Single" |
+                           Marital_Status == "Alone" |
+                           Marital_Status == "YOLO", 1, 0),
+         Married = ifelse(Marital_Status == "Married", 1, 0),
+         Divorced = ifelse(Marital_Status == "Divorced", 1, 0),
+         Widow = ifelse(Marital_Status == "Widow", 1, 0),
+         Together = ifelse(Marital_Status == "Together", 1, 0),
+         Time = as.numeric(difftime("2022-12-31", Dt_Customer))) %>% 
+  select(-Year_Birth, -Dt_Customer, -Education, -Marital_Status) %>%
+  scale()
+
+# PCA
+pca <- prcomp(cluster_df)
+# get_eig(pca)
+
+# Tạo K-mean
+cl <- kmeans(cluster_df, 6)
+
+# pca_data <- as.data.frame(pca$x[, 1:3])
+# pca_data$cluster <- factor(cl$cluster)
+# pca_data %>% plot_ly(x = ~PC1, y = ~PC2, z = ~PC3,
+#                      color = ~cluster)
+
+ifood_df %>%
+  mutate(Age = 2020 - Year_Birth) %>%
+  filter(Age <= 100) %>%
+  plot_ly(x = ~Income, y = ~MntWines, type = "scatter",
+          text = ~paste("Cluster: ", cl$cluster),
+          color = ~factor(cl$cluster),
+          colors = color8_hex[1:6]) %>% 
+  dark_layout()
+```
+
+### 12 Cluster
+```{r}
+cl <- kmeans(cluster_df, 12)
+ifood_df %>%
+  mutate(Age = 2020 - Year_Birth) %>%
+  filter(Age <= 100) %>%
+  plot_ly(x = ~Income, y = ~MntWines, type = "scatter",
+          text = ~paste("Cluster: ", cl$cluster),
+          color = ~factor(cl$cluster),
+          colors = color8_hex) %>% 
+  dark_layout()
+```
+
+
+<!-- # Dash 1 -->
+<!-- Column {data-width=350} -->
+<!-- ----------------------------------------------------------------------- -->
+
+<!-- ### Chart A -->
+
+<!-- ```{r} -->
+<!-- ifood_df %>%  -->
+<!--   plot_ly(y = ~Income, type = "violin",  -->
+<!--           box = list(visible = T), -->
+<!--           quartilemethod="linear", -->
+<!--           meanline = list(visible = T),  -->
+<!--           line = list(color = "rgba(38, 123, 123, 1)"), -->
+<!--           fillcolor = "rgba(38, 123, 123, 0.5)",  -->
+<!--           x0 = "Income", -->
+<!--           points = "all", -->
+<!--           jitter = 0, -->
+<!--           marker = list(color = "rgba(38, 123, 123)")) %>%  -->
+<!--   layout(yaxis = list(title = "", zeroline = F)) %>%  -->
+<!--   dark_layout() -->
+<!-- ``` -->
+
+<!-- ### Chart B -->
+
+<!-- ```{r} -->
+<!-- ifood_df %>%  -->
+<!--   plot_ly(y = ~Recency, type = "violin",  -->
+<!--           box = list(visible = T), -->
+<!--           meanline = list(visible = T),  -->
+<!--           line = list(color = "rgba(59, 134, 134, 1)"), -->
+<!--           fillcolor = "rgba(59, 134, 134, 0.5)",  -->
+<!--           x0 = "Number of days", -->
+<!--           points = "all", -->
+<!--           jitter = 0, -->
+<!--           marker = list(color = "rgba(59, 134, 134, 1)")) %>%  -->
+<!--   layout(yaxis = list(title = "Days since last purchase", zeroline = F)) %>%  -->
+<!--   dark_layout() -->
+<!-- ``` -->
+
+<!-- Column {data-width=650} -->
+<!-- ----------------------------------------------------------------------- -->
+
+<!-- ### Chart C -->
+
+<!-- ```{r} -->
+<!-- ifood_df %>% select(MntMeatProducts, MntWines) %>% -->
+<!--   plot_ly() %>%  -->
+<!--   add_trace(type = "violin", y = ~MntMeatProducts, name = "Meat", -->
+<!--             box = list(visible = TRUE), meanline = list(visible = TRUE), -->
+<!--             line = list(color = color2_line[1]), fillcolor = color2_fill[1], -->
+<!--             points = "all", jitter = 0, -->
+<!--             marker = list(color = color2_fill[1])) %>%  -->
+<!--   add_trace(type = "violin", y = ~MntWines, name = "Wine", -->
+<!--             box = list(visible = TRUE), meanline = list(visible = TRUE), -->
+<!--             line = list(color = color2_line[2]), fillcolor = color2_fill[2], -->
+<!--             points = "all", jitter = 0, -->
+<!--             marker = list(color = color2_fill[2])) %>%  -->
+<!--   layout(xaxis = list(title = "Products"), -->
+<!--          yaxis = list(title = "Amount", zeroline = FALSE)) %>%  -->
+<!--   dark_layout() -->
+<!-- ``` -->
+
+<!-- ### Chart D -->
+
+<!-- ```{r} -->
+<!-- ifood_df %>% select(MntFishProducts, MntFruits, MntGoldProds, MntSweetProducts) %>%  -->
+<!--   plot_ly() %>%  -->
+<!--   add_trace(type = "violin", y = ~MntFishProducts, name = "Fish", -->
+<!--             box = list(visible = TRUE), meanline = list(visible = TRUE), -->
+<!--             line = list(color = color4_line[1]), fillcolor = color4_fill[1], -->
+<!--             points = "all", jitter = 0, # add point -->
+<!--             marker = list(color = color4_fill[1])) %>%  -->
+<!--   add_trace(type = "violin", y = ~MntFruits, name = "Fruits", -->
+<!--             box = list(visible = TRUE), meanline = list(visible = TRUE), -->
+<!--             line = list(color = color4_line[2]), fillcolor = color4_fill[2], -->
+<!--             points = "all", jitter = 0, -->
+<!--             marker = list(color = color4_fill[2])) %>%  -->
+<!--   add_trace(type = "violin", y = ~MntGoldProds, name = "GoldProds", -->
+<!--             box = list(visible = TRUE), meanline = list(visible = TRUE), -->
+<!--             line = list(color = color4_line[3]), fillcolor = color4_fill[3], -->
+<!--             points = "all", jitter = 0, -->
+<!--             marker = list(color = color4_fill[3])) %>%  -->
+<!--   add_trace(type = "violin", y = ~MntSweetProducts, name = "Sweet", -->
+<!--             box = list(visible = TRUE), meanline = list(visible = TRUE), -->
+<!--             line = list(color = color4_line[4]), fillcolor = color4_fill[4], -->
+<!--             points = "all", jitter = 0, -->
+<!--             marker = list(color = color4_fill[4])) %>%  -->
+<!--   layout(xaxis = list(title = "Products"), -->
+<!--          yaxis = list(title = "Amount", zeroline = FALSE)) %>%  -->
+<!--   dark_layout() -->
+<!-- ``` -->
+
+
+<!-- Column {data-width=330} -->
+<!-- ----------------------------------------------------------------------- -->
+

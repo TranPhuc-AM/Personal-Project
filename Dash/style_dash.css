@@ -1,0 +1,172 @@
+@font-face {
+  font-family: "MyHeadingFont";
+  src: url("fonts/K2D-Bold.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "MyBodyFont";
+  src: url("fonts/ReadexPro-Regular.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+
+/* Nội dung văn bản */
+body, p, li {
+  font-family: "MyBodyFont", serif;
+}
+
+/* In đậm nội dung */
+strong, b {
+  font-weight: bold;
+}
+
+/* Tiêu đề */
+h1, h2, h3, h4, h5, h6 {
+  font-family: "MyHeadingFont", sans-serif;
+}
+
+.nav-link, .navbar-brand, .dropdown-item, .chart-title {
+    font-family: 'MyHeadingFont', sans-serif; 
+}
+
+.nav-link, .navbar-brand {
+    border-radius: 8px;
+}
+
+.nav-link:hover {
+    
+}
+
+.navbar-brand {
+    margin-top: 4px;
+    margin-right: 8px;
+    background-color: #0B686B;
+    border: 3px solid #0B686B;
+    border-radius: 0px 8px 8px 0px !important;
+    height: 55px;
+}
+
+.section {
+    background-color: #1e1e1e;
+}
+
+div.level2, div.level3 {
+    border-radius: 8px;
+}
+
+div.level3 {
+    border: solid #3c3c3c;
+}
+
+.chart-title{
+    border: 1px solid #3c3c3c !important;
+}
+
+.navbar-inverse {
+    background-color: #1c1c1c;
+    border-color: #3e3e3e;
+}
+
+.nav-item {
+    margin-top: 4px;
+    margin-bottom: 4px;
+    margin-right: 10px;
+    border-radius: 8px;
+    border: 3px solid #0B686B;
+}
+
+.nav-item:hover {
+    background-color: #0B686B;
+}
+
+.navbar-inverse .navbar-nav>.active>a, .navbar-inverse .navbar-nav>.active>a:hover, .navbar-inverse .navbar-nav>.active>a:focus {
+    color: #ffffff;
+    background-color: #0B686B;
+}
+
+.navbar-inverse .navbar-nav>li>a:hover, .navbar-inverse .navbar-nav>li>a:focus {
+    color: #ffffff;
+    background-color: #0B686B;
+}
+
+.nav-tabs-custom > .nav-tabs > li.active {
+    border-top-color: #0B686B;
+}
+
+.navbar-inverse .navbar-nav>.open>a, .navbar-inverse .navbar-nav>.open>a:hover, .navbar-inverse .navbar-nav>.open>a:focus {
+    background-color: #0B686B;
+    color: #ffffff;
+}
+
+.navbar-inverse .navbar-toggle:hover, .navbar-inverse .navbar-toggle:focus {
+    background-color: #0B686B;
+}
+
+/* .tabset */
+.nav-tabs-custom {
+    border: solid #3c3c3c;
+}
+
+.nav-tabs-custom>.nav-tabs {
+      border-bottom: 1px solid #3c3c3c;
+}
+
+.nav-item.active {
+    background-color: #0B686B;
+}
+
+ul.nav-tabs > li.active> a.nav-link {
+    background: #0B686B;
+}
+
+.nav-tabs>li {
+    margin-top: -1px;
+}
+
+.nav-tabs-custom>.nav-tabs>li {
+    border: 3px solid #0B686B !important;
+}
+  
+ul.nav-tabs > li.nav-item > a.nav-link {
+    color: white;
+    border-radius: 8px 8px 0 0;
+    border-left: transparent;
+    border-right: transparent;
+}
+ul.nav-tabs > li.active> a.nav-link:hover {
+    color: white;
+    background-color: #0B686B;
+}
+
+.chart-wrapper .chart-stage {
+    background-color: #1e1e1e;
+}
+
+.nav-tabs-custom>.nav-tabs>li:first-of-type.active>a {
+    border-left-color: transparent;
+    border-right-color: transparent;
+}
+
+/* Dark mode */
+
+body {
+  background-color: #1e1e1e;
+  color: #ffffff;
+}
+
+
+.navbar-inverse .navbar-nav > li > a {
+  color: #cccccc;
+}
+
+.navbar-inverse .navbar-nav > li > a:hover {
+  color: #ffffff;
+}
+
+/* Card */
+
+p.value, p.caption {
+    text-align: center;
+}
